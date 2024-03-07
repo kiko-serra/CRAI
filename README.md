@@ -9,5 +9,5 @@ Starting dataset: iris
 New target dataset: raisin (reduction only from 900 to 150 and only 2 classes)
 
 ### (update - 07/03/24)
-Changing from MLPClassifier to KNNClassifier for the raisin dataset
+Changing from MLPClassifier to KNNClassifier for the raisin dataset. Changing this made the accuracy from 0.46 to 0.76
 Change from train_test_split to StratifiedKFold
