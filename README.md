@@ -13,4 +13,6 @@ Changing from MLPClassifier to KNNClassifier for the raisin dataset. Changing th
 Change from train_test_split to StratifiedKFold
 
 ### (update - 14/03/24)
-Changed from KNNClassifier to LogisticRegression for the raisin dataset. Changing this made the accuracy from 0.76 to 0.95
+Changed from KNNClassifier to LogisticRegression for the raisin dataset. Changing this made the accuracy from 0.76 to 0.95.
+Instead of saving all accuracies from within the folds now it saves only the mean accuracy.
+Now the column swap is done based on the index of the column instead of the name of the column.
