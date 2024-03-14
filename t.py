@@ -1,9 +1,6 @@
-skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=10)
-
-for fold, (train_index, test_index) in enumerate(skf.split(X, Y)):
-        train_X = one_hot_data.take(train_index)
-        train_Y = Y.take(train_index)
-        test_X = one_hot_data.take(test_index)
-        test_Y = Y.take(test_index)
-
-#resto do for loop
+def df_column_switch(df, column1, column2):
+    i = list(df.columns)
+    a, b = i.index(column1), i.index(column2)
+    i[b], i[a] = i[a], i[b]
+    df = df[i]
+    return df
