@@ -1,6 +1,6 @@
-iris
-
 (note: all algorithms are using the default parameters)
+
+iris
 
 | Model                    | Accuracy |
 |--------------------------|----------|
@@ -8,7 +8,7 @@ iris
 | RandomForestClassifier  | 0.95     |
 | LogisticRegression      | 0.97     |
 
-raisin
+raisin (reduction from 900 to 150 and only ['class', 'majoraxislength', 'perimeter', 'convexarea', 'area'] columns - reduction kept the distribution of the classes)
 | Model                    | Accuracy |
 |--------------------------|----------|
 | KNNClassifier  | 0.88     |
