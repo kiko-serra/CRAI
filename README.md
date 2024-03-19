@@ -16,3 +16,6 @@ Change from train_test_split to StratifiedKFold
 Changed from KNeighborsClassifier to LogisticRegression for the raisin dataset. Changing this made the accuracy from 0.76 to 0.95.
 Instead of saving all accuracies from within the folds now it saves only the mean accuracy.
 Now the column swap is done based on the index of the column instead of the name of the column.
+
+### (update - 19/03/24)
+Created notebooks to go from raisin to iris dataset.
