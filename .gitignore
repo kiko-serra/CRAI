@@ -2,3 +2,4 @@
 .vscode
 todo.txt
 notes.txt
+*/__pycache__/*
