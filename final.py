@@ -27,7 +27,6 @@ def get_most_important_features(dataset: pd.DataFrame, nr_columns: int) -> list:
     selected_indices = sorted_indices[:nr_columns-1]
     # Get the index of the last column (target column)
     last_column_index = len(dataset.columns) - 1
-    # Add the target column index to the selected indices
     selected_indices = np.append(selected_indices, last_column_index)
     
     return selected_indices
@@ -37,10 +36,10 @@ def organize_dataset(dataset: pd.DataFrame, target_class_percentage: dict) -> pd
     for key in target_class_percentage.keys():
         # Filter the dataset for the current class
         class_data = dataset[dataset[dataset.columns[-1]] == key]
-        # Append the filtered data to the list
+        num_rows = target_class_percentage[key][1]
+        class_data = class_data.head(num_rows)
         ordered_data_parts.append(class_data)
 
-    # Concatenate the parts together to get the ordered dataset
     new_dataset = pd.concat(ordered_data_parts, ignore_index=True)
     return new_dataset
 
@@ -51,24 +50,9 @@ def reduce_dataset(dataset: pd.DataFrame, nr_rows: int) -> pd.DataFrame:
     target_class_percentage = {}
     for i in target_column.value_counts().index:
         target_class_percentage[i] = target_column.value_counts(normalize=True)[i], round(nr_rows * target_column.value_counts(normalize=True)[i])
+    #print(target_class_percentage)
     dataset = organize_dataset(dataset, target_class_percentage)
-    print(target_class_percentage)
-    #! from here ...
-    target_class_count = dict.fromkeys(target_column.unique(), 0)
-
-    #remove 6. This was because in the beginning we were only going to choose 6 values from each class
-    # this needs to be dynamic and calculate in order to maintain the class distribution
-    lowest_percentage = sorted(target_class_percentage.items(), key=lambda x: x[1][0])[:6]
-    for key, x, i in target_class_percentage:
-        for t in dataset:
-            if dataset['target'] == key:
-                new_dataset = new_dataset.append(dataset['target'])
-
-    for lett in lowest_percentage:
-        classes_to_remove = lett[0]
-        target_class_count[classes_to_remove] += 1
-    #! to here is just example code
-    return dataset.iloc[:nr_rows]
+    return dataset
 
 def encode_labels(dataset: pd.DataFrame) -> pd.DataFrame:
     label_encoder = LabelEncoder()
@@ -89,8 +73,8 @@ def analyse_datasets_accuracies(initial_dataset: pd.DataFrame, final_dataset: pd
     initial_dataset_features = get_most_important_features(initial_dataset, min_columns)
     final_dataset_features = get_most_important_features(final_dataset, min_columns)
 
-    print(initial_dataset_features)
-    print(final_dataset_features)
+    #print(initial_dataset_features)
+    #print(final_dataset_features)
     # Change the datasets to have the same number of columns
     initial_dataset = initial_dataset.iloc[:, initial_dataset_features]
     final_dataset = final_dataset.iloc[:, final_dataset_features]
@@ -99,4 +83,4 @@ def analyse_datasets_accuracies(initial_dataset: pd.DataFrame, final_dataset: pd
     final_dataset = reduce_dataset(final_dataset, min_rows)
     print("Analyse datasets accuracies")
 
-analyse_datasets_accuracies(pd.read_csv('final_csv/reduced_iris_copy.csv'), pd.read_csv('final_csv/reduced_raisin_copy.csv'), 10)
+analyse_datasets_accuracies(pd.read_csv('csv/Iris.csv'), pd.read_csv('csv/raisin.csv'), 10)
