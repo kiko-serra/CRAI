@@ -20,8 +20,7 @@ def get_most_important_features(dataset: pd.DataFrame, nr_columns: int) -> list:
     sorted_indices = np.argsort(rf.feature_importances_)[::-1]
     selected_indices = sorted_indices[:nr_columns]
     # ?test code
-    print("Most important features:")
-    
+    print("Most important features:" + str(selected_indices))
     return selected_indices
 # main function
 def analyse_datasets_accuracies(initial_dataset: pd.DataFrame, final_dataset: pd.DataFrame, percentage: int):
@@ -29,3 +28,6 @@ def analyse_datasets_accuracies(initial_dataset: pd.DataFrame, final_dataset: pd
     initial_dataset_features = get_most_important_features(initial_dataset, smaller_columns)
     final_dataset_features = get_most_important_features(final_dataset, smaller_columns)
     print("Analyse datasets accuracies")
+
+
+analyse_datasets_accuracies(pd.read_csv("../../../csv/Iris.csv"), pd.read_csv("../../../csv/raisin.csv"), 10)
