@@ -1,0 +1,38 @@
+Metadata-Version: 2.1
+Name: test_algorithms_morphing
+Version: 0.1
+Summary: A package for analyzing and morphing datasets using various machine learning algorithms.
+Home-page: https://github.com/yourusername/my_ml_package
+Author: Your Name
+Author-email: your.email@example.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: scikit-learn
+Requires-Dist: matplotlib
+Requires-Dist: tqdm
+
+# My ML Package
+
+My ML Package is a Python package for analyzing and morphing datasets using various machine learning algorithms.
+
+## Features
+
+- Remove ID columns from datasets.
+- Encode labels.
+- Reduce dataset size.
+- Select the most important features.
+- Calculate dataset distance and accuracy.
+- Morph datasets from initial to final states.
+- Compare accuracies of different machine learning algorithms.
+
+## Installation
+
+You can install the package using pip:
+
+```sh
+pip install my_ml_package

@@ -1,0 +1,2 @@
+[console_scripts]
+analyse_datasets_accuracies = test_algorithms_morphing.morphing:analyse_datasets_accuracies

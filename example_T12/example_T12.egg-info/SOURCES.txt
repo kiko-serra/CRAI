@@ -1,9 +1,0 @@
-LICENSE
-README.md
-pyproject.toml
-example_T12/__init__.py
-example_T12/start.py
-example_T12.egg-info/PKG-INFO
-example_T12.egg-info/SOURCES.txt
-example_T12.egg-info/dependency_links.txt
-example_T12.egg-info/top_level.txt
