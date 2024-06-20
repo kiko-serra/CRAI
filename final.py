@@ -1,12 +1,15 @@
+import array
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 import pandas as pd
-from example_T12 import start
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold
 from sklearn import metrics
 from sklearn.neural_network import MLPClassifier
+from sklearn.tree import DecisionTreeClassifier
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 #start.analyse_datasets_accuracies(pd.read_csv('csv/Iris.csv'), pd.read_csv('csv/raisin.csv'), 10)
@@ -86,117 +89,134 @@ def calculate_dataset_distance(initial_value: int, final_value: int, current_val
     else:
         return (current_value - initial_value) / total_distance
     
-def calculate_accuracy_rfc(dataset: pd.DataFrame) -> float:
+def calculate_accuracy(dataset: pd.DataFrame, algorithm: int) -> float:
     X = dataset.drop(dataset.columns[-1], axis=1)
     Y = dataset[dataset.columns[-1]].astype('int')
 
     n_splits = 10
-    skf = StratifiedKFold(n_splits, shuffle=True, random_state=10)
-    average_accuracy=0
+    skf = StratifiedKFold(n_splits, shuffle=True, random_state=20)
+    average_accuracy = 0
 
-    for fold, (train_index, test_index) in enumerate(skf.split(X, Y)):
-        X_train = X.take(train_index)
-        y_train = Y.take(train_index)
-        X_test = X.take(test_index)
-        y_test = Y.take(test_index)
+    if algorithm == 1:
+        classifier = RandomForestClassifier()
+    elif algorithm == 2:
+        classifier = MLPClassifier(max_iter=1000)
+    elif algorithm == 3:
+        classifier = DecisionTreeClassifier()
+    elif algorithm == 4:
+        classifier = LogisticRegression(max_iter=5000)
+    else:
+        raise ValueError("Invalid algorithm code")
 
-        rf_classifier = RandomForestClassifier()
-        rf_classifier.fit(X_train, y_train)
+    for train_index, test_index in skf.split(X, Y):
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = Y.iloc[train_index], Y.iloc[test_index]
 
-        y_pred = rf_classifier.predict(X_test)
+        classifier.fit(X_train, y_train)
+        y_pred = classifier.predict(X_test)
 
-        accuracy = round(metrics.accuracy_score(y_test, y_pred), 2)
-        average_accuracy = average_accuracy + accuracy
+        accuracy = metrics.accuracy_score(y_test, y_pred)
+        average_accuracy += accuracy
 
-    average_accuracy = average_accuracy/n_splits
+    average_accuracy /= n_splits
 
-    return average_accuracy
-
-def calculate_accuracy_mlp(dataset: pd.DataFrame) -> float:
-    X = dataset.drop(dataset.columns[-1], axis=1)
-    Y = dataset[dataset.columns[-1]].astype('int')
-
-    n_splits = 10
-    skf = StratifiedKFold(n_splits, shuffle=True, random_state=10)
-    average_accuracy=0
-
-    for fold, (train_index, test_index) in enumerate(skf.split(X, Y)):
-        X_train = X.take(train_index)
-        y_train = Y.take(train_index)
-        X_test = X.take(test_index)
-        y_test = Y.take(test_index)
-
-        mlp_classifier = MLPClassifier(max_iter=500)
-        mlp_classifier.fit(X_train, y_train)
-
-        y_pred = mlp_classifier.predict(X_test)
-
-        accuracy = round(metrics.accuracy_score(y_test, y_pred), 2)
-        average_accuracy = average_accuracy + accuracy
-
-    average_accuracy = average_accuracy/n_splits
-
-    return average_accuracy
+    return average_accuracy, y_pred
 
 def is_average_greater_than_half(distance_array: list) -> bool:
     average = np.mean(distance_array)
     if average >= 0.5:
         return True
     else:
-        return False    
+        return False
+    
+def plot_and_save_accuracy(accuracy_overall_1: array, accuracy_overall_2: array, target_class_changed_index: int, algorithm_1: str, algorithm_2: str) -> None:
+    plt.plot(range(len(accuracy_overall_1)), accuracy_overall_1, label=algorithm_name(algorithm_1))
+    plt.plot(range(len(accuracy_overall_2)), accuracy_overall_2, label=algorithm_name(algorithm_2))
+    plt.axvline(x=target_class_changed_index, color='red', linestyle='--')
+    plt.axhline(y=accuracy_overall_1[-1], linestyle='--')
+    plt.axhline(y=accuracy_overall_2[-1], linestyle='--')
+    plt.xlabel('Iteration')
+    plt.ylabel('Accuracy')
+    plt.title('Accuracy Comparison ' + algorithm_name(algorithm_1) + ' vs ' + algorithm_name(algorithm_2))
+    plt.legend()
+    plt.savefig('./plots/accuracy_plot.png')
+    plt.close()
 
-def morphing(initial_dataset: pd.DataFrame, final_dataset: pd.DataFrame, percentage: int, nr_columns: int, nr_rows: int) -> None:
+def morphing(initial_dataset: pd.DataFrame, final_dataset: pd.DataFrame, percentage: int, nr_columns: int, nr_rows: int, algorithm_1: int, algorithm_2: int) -> pd.DataFrame:
     dataset = initial_dataset.copy()
     dataset_delta = get_dataset_delta(initial_dataset, final_dataset, percentage, nr_columns)
 
     target_class_changed_index = 0
     i = 0
-    accuracy_overall_rfc = []
-    accuracy_overall_mlp = []
-    while True:
-        distance_array = []
-        for column in range(nr_columns-1):
-            for row in range(nr_rows):
-                final_value = final_dataset.iloc[row, column]
-                current_value = dataset.iloc[row, column]
-                delta_value = dataset_delta.iloc[row, column]
-                distance = final_value - current_value
-                if distance > 0:
-                    if current_value + delta_value > final_value:
-                        dataset.iloc[row, column] = final_value
-                    else:
-                        dataset.iloc[row, column] += delta_value
-                elif distance < 0:
-                    if current_value - delta_value < final_value:
-                        dataset.iloc[row, column] = final_value
-                    else:
-                        dataset.iloc[row, column] -= delta_value
+    accuracy_overall_1 = []
+    accuracy_overall_2 = []
 
-                dataset_distance = calculate_dataset_distance(initial_dataset.iloc[row, column], final_dataset.iloc[row, column], dataset.iloc[row, column])
-                distance_array.append(dataset_distance)
+    meta_data = []
+    with tqdm(total=int(1/percentage)) as pbar_columns:
+        while True:
+            distance_array = []
+            for column in range(nr_columns-1):
+                for row in range(nr_rows):
+                    final_value = final_dataset.iloc[row, column]
+                    current_value = dataset.iloc[row, column]
+                    delta_value = dataset_delta.iloc[row, column]
+                    distance = final_value - current_value
+                    if distance > 0:
+                        if current_value + delta_value > final_value:
+                            dataset.iloc[row, column] = final_value
+                        else:
+                            dataset.iloc[row, column] += delta_value
+                    elif distance < 0:
+                        if current_value + delta_value < final_value:
+                            dataset.iloc[row, column] = final_value
+                        else:
+                            dataset.iloc[row, column] += delta_value
 
-        accuracy_overall_rfc.append(calculate_accuracy_rfc(dataset))
-        accuracy_overall_mlp.append(calculate_accuracy_mlp(dataset))
+                    dataset_distance = calculate_dataset_distance(initial_dataset.iloc[row, column], final_dataset.iloc[row, column], dataset.iloc[row, column])
+                    if dataset_distance < 0:
+                        print("Error: Dataset distance is negative", dataset_distance, "Iteration:", i, "Row:", row, "Column:", column, "Current value:", dataset.iloc[row, column], "Final value:", final_dataset.iloc[row, column], "Delta value:", delta_value)
+                    distance_array.append(dataset_distance)
+            accuracy_algorithm_1, y_pred_1 = calculate_accuracy(dataset, algorithm_1)
+            accuracy_algorithm_2, y_pred_2 = calculate_accuracy(dataset, algorithm_2)
+            accuracy_overall_1.append(accuracy_algorithm_1)
+            accuracy_overall_2.append(accuracy_algorithm_2)
 
-        if is_average_greater_than_half(distance_array) and target_class_changed_index == 0:
-            dataset.iloc[:, -1] = final_dataset.iloc[:, -1]
-            target_class_changed_index = i
-            print("Target feature changed to Final Dataset target at index:", i)
-        #print("Iteration:", i, "Distance avg", np.mean(distance_array) )
-        if np.mean(distance_array) == 1:
-            print("Converged at iteration:", i)
-            break
-        i = i + 1
-    plt.plot(range(len(accuracy_overall_rfc)), accuracy_overall_rfc, label='RFC')
-    plt.plot(range(len(accuracy_overall_mlp)), accuracy_overall_mlp, label='MLP')
-    plt.axvline(x=target_class_changed_index, color='red', linestyle='--')
-    plt.axhline(y=accuracy_overall_rfc[-1], linestyle='--')
-    plt.axhline(y=accuracy_overall_mlp[-1], linestyle='--')
-    plt.xlabel('Iteration')
-    plt.ylabel('Accuracy')
-    plt.title('Accuracy Comparison KNN vs RFC')
-    plt.legend()
-    plt.show()
+            if is_average_greater_than_half(distance_array) and target_class_changed_index == 0:
+                dataset.iloc[:, -1] = final_dataset.iloc[:, -1]
+                target_class_changed_index = i
+                print("Target feature changed to Final Dataset target at index:", i)
+            if np.mean(distance_array) >= 1:
+                print("Converged at iteration:", i)
+                break
+            meta_data.append([i, round(np.mean(distance_array),3), dataset.iloc[:, -1].values[0], y_pred_1, y_pred_2, round(accuracy_overall_1[-1],3), round(accuracy_overall_2[-1],3)])
+            i = i + 1
+            pbar_columns.update(1)
+
+    plot_and_save_accuracy(accuracy_overall_1, accuracy_overall_2, target_class_changed_index, algorithm_1, algorithm_2)
+
+    meta_data = pd.DataFrame(meta_data, columns=['Iteration', 'Distance', 'Target', 'Prediction ' + algorithm_name(algorithm_1), 'Prediction ' + algorithm_name(algorithm_2), 'Accuracy ' + algorithm_name(algorithm_1), 'Accuracy ' + algorithm_name(algorithm_2)])
+    return meta_data
+
+def algorithm_name(algorithm: int) -> str:
+    if algorithm == 1:
+        return "RFC"
+    elif algorithm == 2:
+        return "MLP"
+    elif algorithm == 3:
+        return "Decision Tree"
+    elif algorithm == 4:
+        return "Logistic"
+
+def choose_algorithm() -> int:
+    print("Available algorithms:")
+    print("1. Random Forest Classifier")
+    print("2. MLP Classifier")
+    print("3. Decision Tree Classifier")
+    print("4. Logistic Regression")
+    algorithm1 = int(input("Choose the first algorithm (enter the corresponding number): "))
+    algorithm2 = int(input("Choose the second algorithm (enter the corresponding number): "))
+    return algorithm1, algorithm2
+
 #* Main function
 
 #* Assumptions:
@@ -204,6 +224,7 @@ def morphing(initial_dataset: pd.DataFrame, final_dataset: pd.DataFrame, percent
 #* - The datasets only have numerical features (except the target column which can be categorical)
 #* - The datasets might have a different number of rows and columns
 def analyse_datasets_accuracies(initial_dataset: pd.DataFrame, final_dataset: pd.DataFrame, percentage: int) -> None:
+    algorithm_1, algorithm2 = choose_algorithm()
     initial_dataset = remove_id_columns(initial_dataset)
     final_dataset = remove_id_columns(final_dataset)
 
@@ -221,6 +242,8 @@ def analyse_datasets_accuracies(initial_dataset: pd.DataFrame, final_dataset: pd
     initial_dataset = reduce_dataset(initial_dataset, min_rows)
     final_dataset = reduce_dataset(final_dataset, min_rows)
 
-    morphing(initial_dataset, final_dataset, percentage, min_columns, min_rows)
+    meta_data = morphing(initial_dataset, final_dataset, percentage, min_columns, min_rows, algorithm_1, algorithm2)
+    meta_data.to_csv('csv/meta_data.csv', index=False)
 
-analyse_datasets_accuracies(pd.read_csv('csv/Iris.csv'), pd.read_csv('csv/raisin.csv'), 0.01)
+analyse_datasets_accuracies(pd.read_csv('csv/Iris.csv'), pd.read_csv('csv/Dry_Bean_Dataset.csv'), 0.01)
+#analyse_datasets_accuracies(pd.read_csv('csv/Iris.csv'), pd.read_csv('csv/raisin.csv'), 0.01)
