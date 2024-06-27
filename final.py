@@ -11,6 +11,9 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from pymfe.mfe import MFE
+import warnings
+warnings.filterwarnings("ignore")
 
 #start.analyse_datasets_accuracies(pd.read_csv('csv/Iris.csv'), pd.read_csv('csv/raisin.csv'), 10)
 def remove_id_columns(dataset: pd.DataFrame) -> pd.DataFrame:
@@ -129,6 +132,22 @@ def is_average_greater_than_half(distance_array: list) -> bool:
     else:
         return False
     
+def define_meta_features(dataset: pd.DataFrame) -> str:
+    X = dataset.drop(dataset.columns[-1], axis=1)
+    Y = dataset[dataset.columns[-1]].astype('int')
+
+    x_values = X.values
+    y_values = Y.values
+    mfe = MFE()
+    try:
+        mfe.fit(x_values,y_values)
+        ft = mfe.extract()
+    except:
+        print("Error in extracting Metafeatures")
+        ft = "Error in extracting Metafeatures"
+
+    return ft
+    
 def plot_and_save_accuracy(accuracy_overall_1: array, accuracy_overall_2: array, target_class_changed_index: int, algorithm_1: str, algorithm_2: str) -> None:
     plt.plot(range(len(accuracy_overall_1)), accuracy_overall_1, label=algorithm_name(algorithm_1))
     plt.plot(range(len(accuracy_overall_2)), accuracy_overall_2, label=algorithm_name(algorithm_2))
@@ -178,6 +197,7 @@ def morphing(initial_dataset: pd.DataFrame, final_dataset: pd.DataFrame, percent
                     distance_array.append(dataset_distance)
             accuracy_algorithm_1, y_pred_1 = calculate_accuracy(dataset, algorithm_1)
             accuracy_algorithm_2, y_pred_2 = calculate_accuracy(dataset, algorithm_2)
+            ft = define_meta_features(dataset)
             accuracy_overall_1.append(accuracy_algorithm_1)
             accuracy_overall_2.append(accuracy_algorithm_2)
 
@@ -188,13 +208,13 @@ def morphing(initial_dataset: pd.DataFrame, final_dataset: pd.DataFrame, percent
             if np.mean(distance_array) >= 1:
                 print("Converged at iteration:", i)
                 break
-            meta_data.append([i, round(np.mean(distance_array),3), dataset.iloc[:, -1].values[0], y_pred_1, y_pred_2, round(accuracy_overall_1[-1],3), round(accuracy_overall_2[-1],3)])
+            meta_data.append([i, round(np.mean(distance_array),3), dataset.iloc[:, -1].values[0], y_pred_1, y_pred_2, ft, round(accuracy_overall_1[-1],3), round(accuracy_overall_2[-1],3)])
             i = i + 1
             pbar_columns.update(1)
 
     plot_and_save_accuracy(accuracy_overall_1, accuracy_overall_2, target_class_changed_index, algorithm_1, algorithm_2)
 
-    meta_data = pd.DataFrame(meta_data, columns=['Iteration', 'Distance', 'Target', 'Prediction ' + algorithm_name(algorithm_1), 'Prediction ' + algorithm_name(algorithm_2), 'Accuracy ' + algorithm_name(algorithm_1), 'Accuracy ' + algorithm_name(algorithm_2)])
+    meta_data = pd.DataFrame(meta_data, columns=['Iteration', 'Distance', 'Target', 'Prediction ' + algorithm_name(algorithm_1), 'Prediction ' + algorithm_name(algorithm_2), 'Meta-Features', 'Accuracy ' + algorithm_name(algorithm_1), 'Accuracy ' + algorithm_name(algorithm_2)])
     return meta_data
 
 def algorithm_name(algorithm: int) -> str:
@@ -246,4 +266,4 @@ def analyse_datasets_accuracies(initial_dataset: pd.DataFrame, final_dataset: pd
     meta_data.to_csv('csv/meta_data.csv', index=False)
 
 analyse_datasets_accuracies(pd.read_csv('csv/Iris.csv'), pd.read_csv('csv/Dry_Bean_Dataset.csv'), 0.01)
-#analyse_datasets_accuracies(pd.read_csv('csv/Iris.csv'), pd.read_csv('csv/raisin.csv'), 0.01)
+#analyse_datasets_accuracies(pd.read_csv('csv/Iris.csv'), pd.read_csv('csv/raisin.csv'), 0.005)
